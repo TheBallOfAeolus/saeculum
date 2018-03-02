@@ -3,21 +3,21 @@
 # Accept folder
 if [ "$#" != "1" ]; then
   printf "I need the folder name where all the original pictures are\\n"
-  printf "The folder must be inside originals/\\n"
   printf "Please, enter folder name:\\n"
   read -r VAR_OriginalFolderName
 else
   VAR_OriginalFolderName="$1"
 fi;
+CleanedVAR_OriginalFolderName=${VAR_OriginalFolderName//[+= .,?\\\/:]/_}
 
 # Confirm if the folder request exist
-VAR_OriginalPicturesFolderLocation=originals/$VAR_OriginalFolderName
+VAR_OriginalPicturesFolderLocation=$VAR_OriginalFolderName
 if [ ! -d $VAR_OriginalPicturesFolderLocation ]; then
   printf "I couldn't find the folder $VAR_OriginalPicturesFolderLocation\\n"
-  printf "Please make sure $VAR_OriginalFolderName is under originals.\\n"
+  printf "Please make sure $VAR_OriginalFolderName exist.\\n"
 else
   printf "\\nWe have found $VAR_OriginalFolderName\\n"
-  printf "We will now start creating temporary folders needed for the timelap video.\\n\\n"
+  printf "We will now start creating temporary folders needed for the time-lapse video.\\n\\n"
 fi;
 
 # Create temproray folder
@@ -37,9 +37,9 @@ if [ -f $VAR_TempFolder/DescriptionDisplayedInVideo.txt ]; then
 else
   printf "Please add the description you would like to have in front of the date and time:\\n"
   read -r description
-  CleanedDescription=${description//[+= .,?]/_}
   echo "${description}" > $VAR_TempFolder/DescriptionDisplayedInVideo.txt
 fi;
+CleanedDescription=${description//[+= .,?]/_}
 
 # step 01.1 confirm if the folder where the temporary images are going to be created exist, if it doesn't create it
 VAR_AddedTimeTempFolder="${VAR_TempFolder}/AddedTime"
@@ -115,7 +115,7 @@ fps=60
 scale=3840:2160
 CleanedScale=${scale//[-+=.,:]/x}
 
-VideoFileName="${VAR_OriginalFolderName}_-_${CleanedDescription}_-_fps_${fps}_-_scale_${CleanedScale}.avi"
+VideoFileName="${CleanedVAR_OriginalFolderName}_-_${CleanedDescription}_-_fps_${fps}_-_scale_${CleanedScale}.avi"
 
 mencoder -nosound -ovc lavc -lavcopts vcodec=mpeg4:vbitrate=21600000 -o $VideoFileName -mf type=jpeg:fps=$fps mf://@$PWD/${VAR_TempFolder}/ListOfAddedTimeFiles.txt -vf scale=$scale
 
