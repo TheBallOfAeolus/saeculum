@@ -7,8 +7,11 @@ I love the GoPro time-lapse functionality, but I wasn't able to find any command
 ## Getting Started
 
 The script is expecting a folder with all the pictures taken (it will automatically recursivly navigate within and find any JPG or jpg present).
+
 As it is right now, it will create a local temp folder and will add to each picture found a description and the date and time taken.
+
 If for what ever reason the script is stopped during the process, when re-run it will automatically continue from where it was left.
+
 If it is needed to re-create everything, please delete the temporary folder and run the script again.
 
 ### Prerequisites
@@ -25,9 +28,9 @@ Just download the script and run it.
 
 example
 ```
-:~$ wget https://github.com/TheBallOfAeolus/saeculum/blob/master/Create_Time-lapse_Video.sh
-:~$ chown +x Create_Time-lapse_Video.sh
-:~$ Create_Time-lapse_Video.sh originals/20160615_test
+:~$ git clone https://github.com/TheBallOfAeolus/saeculum.git
+:~$ cd saeculum/
+:~$ ./Create_Time-lapse_Video.sh <~/TheFolder/WhereYouPicturesAreLocated>
 ```
 
 If you really want to install it, in Ubuntu you can move the script (or link -s) to ~/bin.
