@@ -1,5 +1,33 @@
 #!/bin/bash
 #
+# 
+# MIT License
+# 
+# Copyright (c) 2018 TheBallOfAeolus
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy of 
+# this software and associated documentation files (the "Software"), to deal in the 
+# Software without restriction, including without limitation the rights to use, copy, 
+# modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, 
+# and to permit persons to whom the Software is furnished to do so, subject to the 
+# following conditions:
+# The above copyright notice and this permission notice shall be included in all 
+# copies or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
+# INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
+# PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
+# CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE 
+# OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+# 
+# 
+# 
+
+
+
+
+
 # Accept folder
 if [ "$#" != "1" ]; then
   printf "I need the folder name where all the original pictures are\\n"
@@ -53,7 +81,12 @@ else
   read -p "Press enter to continue"
 fi;
 
-## step 01.2 Add date and time to each picture
+## step 01.2 count total amount of files to know create the %
+VAR_TotalAmountOfPicturesToProcess=$(find $VAR_OriginalPicturesFolderLocation -name '*.jpg' -or -name '*.JPG' | wc -l)
+VAR_AmountOfFilesProcessed=0
+
+## step 01.3 Add date and time to each picture
+
 for File in $(find $VAR_OriginalPicturesFolderLocation -name '*.jpg' -or -name '*.JPG')
 do printf "For the following: $File adding date and time\\n"
   Dir=${File%/*}
@@ -68,7 +101,10 @@ do printf "For the following: $File adding date and time\\n"
   #printf "$Extension\\n"
   #printf "$Output\\n"
   #printf "$TemporaryFileWithDT\\n"
-  
+  let VAR_AmountOfFilesProcessed=VAR_AmountOfFilesProcessed+1
+  VAR_PercentageProcessed=$(echo "scale=2; $VAR_AmountOfFilesProcessed*100/$VAR_TotalAmountOfPicturesToProcess" | bc)
+  printf "$VAR_AmountOfFilesProcessed of $VAR_TotalAmountOfPicturesToProcess files processed = ${VAR_PercentageProcessed}%%\\n"
+
   if [ ! -f $TemporaryFileWithDT ]; then
     # Change the font variable to point to your font location
     font="/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
