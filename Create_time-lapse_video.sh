@@ -29,83 +29,84 @@
 
 
 # Accept folder
+## TODO:need to add a confirmation that the folder exists.
 if [ "$#" != "1" ]; then
   printf "I need the folder name where all the original pictures are\\n"
   printf "Please, enter folder name:\\n"
-  read -r VAR_OriginalFolderName
+  read -r original_folder_name
 else
-  VAR_OriginalFolderName="$1"
+  original_folder_name="$1"
 fi;
-CleanedVAR_OriginalFolderName=${VAR_OriginalFolderName//[+= .,?\\\/:]/_}
+cleaned_original_folder_name=${original_folder_name//[+= .,?\\\/:]/_}
 
 # Confirm if the folder request exist
-VAR_OriginalPicturesFolderLocation=$VAR_OriginalFolderName
-if [ ! -d $VAR_OriginalPicturesFolderLocation ]; then
-  printf "I couldn't find the folder $VAR_OriginalPicturesFolderLocation\\n"
-  printf "Please make sure $VAR_OriginalFolderName exist.\\n"
+original_pictures_folder_location=$original_folder_name
+if [ ! -d $original_pictures_folder_location ]; then
+  printf "I couldn't find the folder $original_pictures_folder_location\\n"
+  printf "Please make sure $original_folder_name exist.\\n"
 else
-  printf "\\nWe have found $VAR_OriginalFolderName\\n"
+  printf "\\nWe have found $original_folder_name\\n"
   printf "We will now start creating temporary folders needed for the time-lapse video.\\n\\n"
 fi;
 
 # Create temproray folder
-VAR_TempFolder="temp_${VAR_OriginalFolderName}"
-if [ ! -d $VAR_TempFolder ]; then
-  mkdir -p $VAR_TempFolder;
+temp_folder="temp_${original_folder_name}"
+if [ ! -d $temp_folder ]; then
+  mkdir -p $temp_folder;
 fi;
 
 #### Step 01 add date and description to pictures ####
 printf "#### Adding the time and date to each picture ####\\n"
 
-if [ -f $VAR_TempFolder/DescriptionDisplayedInVideo.txt ]; then
-  description=`cat $VAR_TempFolder/DescriptionDisplayedInVideo.txt`
+if [ -f $temp_folder/description_displayed_in_video.txt ]; then
+  description=`cat $temp_folder/description_displayed_in_video.txt`
   printf "We have found the following description previously used for this time-lapse:\\n"
   printf "${description}\\n\\n"
   read -p "Press enter to continue"
 else
   printf "Please add the description you would like to have in front of the date and time:\\n"
   read -r description
-  echo "${description}" > $VAR_TempFolder/DescriptionDisplayedInVideo.txt
+  echo "${description}" > $temp_folder/description_displayed_in_video.txt
 fi;
-CleanedDescription=${description//[+= .,?]/_}
+cleaned_description=${description//[+= .,?]/_}
 
 # step 01.1 confirm if the folder where the temporary images are going to be created exist, if it doesn't create it
-VAR_AddedTimeTempFolder="${VAR_TempFolder}/AddedTime"
-if [ ! -d $VAR_AddedTimeTempFolder ]; then
+added_time_temp_folder="${temp_folder}/added_time"
+if [ ! -d $added_time_temp_folder ]; then
   printf "\\n\\nCreating the temporary folder where we will be storing the pictures with the date and time.\\n\\n"
-  mkdir -p $VAR_AddedTimeTempFolder;
+  mkdir -p $added_time_temp_folder;
 else
-  printf "\\n\\nIt seems we have found a previously created $VAR_AddedTimeTempFolder\\n"
+  printf "\\n\\nIt seems we have found a previously created $added_time_temp_folder\\n"
   printf "The app won't overwrite already created files, it will automatically continue where it left.\\n"
   printf "If you want to force the creation of the files, please delete the temp folder and run the script again.\\n\\n"
   read -p "Press enter to continue"
 fi;
 
 ## step 01.2 count total amount of files to know create the %
-VAR_TotalAmountOfPicturesToProcess=$(find $VAR_OriginalPicturesFolderLocation -name '*.jpg' -or -name '*.JPG' | wc -l)
-VAR_AmountOfFilesProcessed=0
+total_amount_of_pictures_to_process=$(find $original_pictures_folder_location -name '*.jpg' -or -name '*.JPG' | wc -l)
+amount_of_files_processed=0
 
 ## step 01.3 Add date and time to each picture
 
-for File in $(find $VAR_OriginalPicturesFolderLocation -name '*.jpg' -or -name '*.JPG')
-do printf "For the following: $File adding date and time\\n"
-  Dir=${File%/*}
-  FullFilename=${File##*/}
-  Filename=${FullFilename%.*}
-  Extension=${File##*.}
-  Output=${Filename}_DT.jpg
-  TemporaryFileWithDT=$VAR_AddedTimeTempFolder"/"$Output
-  #printf "$Dir\\n"
-  #printf "$FullFilename\\n"
-  #printf "$Filename\\n"
-  #printf "$Extension\\n"
-  #printf "$Output\\n"
-  #printf "$TemporaryFileWithDT\\n"
-  let VAR_AmountOfFilesProcessed=VAR_AmountOfFilesProcessed+1
-  VAR_PercentageProcessed=$(echo "scale=2; $VAR_AmountOfFilesProcessed*100/$VAR_TotalAmountOfPicturesToProcess" | bc)
-  printf "$VAR_AmountOfFilesProcessed of $VAR_TotalAmountOfPicturesToProcess files processed = ${VAR_PercentageProcessed}%%\\n"
+for file in $(find $original_pictures_folder_location -name '*.jpg' -or -name '*.JPG')
+do printf "For the following: $file adding date and time\\n"
+  dir=${file%/*}
+  full_file_name=${file##*/}
+  filename=${full_file_name%.*}
+  extension=${file##*.}
+  output=${filename}_DT.jpg
+  temporary_file_with_date_and_time=$added_time_temp_folder"/"$output
+  #printf "$dir\\n"
+  #printf "$full_file_name\\n"
+  #printf "$filename\\n"
+  #printf "$extension\\n"
+  #printf "$output\\n"
+  #printf "$temporary_file_with_date_and_time\\n"
+  let amount_of_files_processed=amount_of_files_processed+1
+  percentage_processed=$(echo "scale=2; $amount_of_files_processed*100/$total_amount_of_pictures_to_process" | bc)
+  printf "$amount_of_files_processed of $total_amount_of_pictures_to_process files processed = ${percentage_processed}%%\\n"
 
-  if [ ! -f $TemporaryFileWithDT ]; then
+  if [ ! -f $temporary_file_with_date_and_time ]; then
     # Change the font variable to point to your font location
     font="/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
     
@@ -113,7 +114,7 @@ do printf "For the following: $File adding date and time\\n"
     pointsize=43
     
     # Adding description date and time
-    convert $File \
+    convert $file \
     -font $font \
     -pointsize $pointsize \
     \( -gravity SouthEast \
@@ -130,17 +131,17 @@ do printf "For the following: $File adding date and time\\n"
     \( -gravity SouthWest \
       -fill white \
       -annotate +$pointsize+$pointsize "$description" \)\
-    $TemporaryFileWithDT
-    printf "CREATED $TemporaryFileWithDT\\n\\n"
+    $temporary_file_with_date_and_time
+    printf "CREATED $temporary_file_with_date_and_time\\n\\n"
   else
     printf "Skipping file, already exist\\n\\n"
   fi
 done
 
 ## Step 02 create video
-#printf "${VAR_TempFolder}\\n"
-#printf "${VAR_AddedTimeTempFolder}\\n"
-ls -1v $PWD/${VAR_AddedTimeTempFolder}/* | grep jpg > $VAR_TempFolder/ListOfAddedTimeFiles.txt
+#printf "${temp_folder}\\n"
+#printf "${added_time_temp_folder}\\n"
+ls -1v $PWD/${added_time_temp_folder}/* | grep jpg > $temp_folder/list_of_files_with_added_time.txt
 
 # 1080p@24fps, no sound
 # fps=24
@@ -149,21 +150,21 @@ ls -1v $PWD/${VAR_AddedTimeTempFolder}/* | grep jpg > $VAR_TempFolder/ListOfAdde
 # 4k@90fps, no sound
 fps=60
 scale=3840:2160
-CleanedScale=${scale//[-+=.,:]/x}
+cleaned_scale=${scale//[-+=.,:]/x}
 
-VideoFileName="${CleanedVAR_OriginalFolderName}_-_${CleanedDescription}_-_fps_${fps}_-_scale_${CleanedScale}.avi"
+video_file_name="${cleaned_original_folder_name}_-_${cleaned_description}_-_fps_${fps}_-_scale_${cleaned_scale}.avi"
 
-mencoder -nosound -ovc lavc -lavcopts vcodec=mpeg4:vbitrate=21600000 -o $VideoFileName -mf type=jpeg:fps=$fps mf://@$PWD/${VAR_TempFolder}/ListOfAddedTimeFiles.txt -vf scale=$scale
+mencoder -nosound -ovc lavc -lavcopts vcodec=mpeg4:vbitrate=21600000 -o $video_file_name -mf type=jpeg:fps=$fps mf://@$PWD/${temp_folder}/list_of_files_with_added_time.txt -vf scale=$scale
 
 printf "\\n\\n CONGRATS\\n"
-printf "$VideoFileName\\n"
+printf "$video_file_name\\n"
 printf "created in local directory\\n\\n"
 
 ## creates a file with the most useful commands
-printf "## If you delete some pictures from the folder and you want to re-create the list, run the first ls command ##\\n" > $PWD/$VAR_TempFolder/CheatSheet.txt
-printf "ls -1v $PWD/${VAR_AddedTimeTempFolder}/* | grep jpg > $VAR_TempFolder/ListOfAddedTimeFiles.txt" >> $PWD/$VAR_TempFolder/CheatSheet.txt
-printf "\\n\\n## If you want to modify the mencoder command, here you can find the original one used ##\\n" >> $PWD/$VAR_TempFolder/CheatSheet.txt
-printf "mencoder -nosound -ovc lavc -lavcopts vcodec=mpeg4:vbitrate=21600000 -o $VideoFileName -mf type=jpeg:fps=$fps mf://@$PWD/${VAR_TempFolder}/ListOfAddedTimeFiles.txt -vf scale=$scale" >> $VAR_TempFolder/CheatSheet.txt
+printf "## If you delete some pictures from the folder and you want to re-create the list, run the first ls command ##\\n" > $PWD/$temp_folder/cheat_sheet_with_commands_used.txt
+printf "ls -1v $PWD/${added_time_temp_folder}/* | grep jpg > $temp_folder/list_of_files_with_added_time.txt" >> $PWD/$temp_folder/cheat_sheet_with_commands_used.txt
+printf "\\n\\n## If you want to modify the mencoder command, here you can find the original one used ##\\n" >> $PWD/$temp_folder/cheat_sheet_with_commands_used.txt
+printf "mencoder -nosound -ovc lavc -lavcopts vcodec=mpeg4:vbitrate=21600000 -o $video_file_name -mf type=jpeg:fps=$fps mf://@$PWD/${temp_folder}/list_of_files_with_added_time.txt -vf scale=$scale" >> $temp_folder/cheat_sheet_with_commands_used.txt
 
 
 exit 0
