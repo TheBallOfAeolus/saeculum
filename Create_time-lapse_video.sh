@@ -1,5 +1,15 @@
 #!/bin/bash
-#
+ 
+#**************************************************************************#
+#              https://github.com/TheBallOfAeolus/saeculum                 #
+#                        written by TheBallOfAeolus                        #
+#                               March 2018                                 #
+#                                                                          #
+#  Creates a time-lapse video, from a folder containing multiple pictures  #
+#   adding a description and the exif date of when each photo was taken.   #
+#**************************************************************************#
+
+ 
 # 
 # MIT License
 # 
@@ -20,8 +30,6 @@
 # HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
 # CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE 
 # OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-# 
-# 
 # 
 
 
