@@ -36,7 +36,6 @@
 
 ### ERROR CODES ###
 E_BADDIR=85                     # No such directory.
-E_CANNOTEXECUTE=126             # Command invoked cannot execute
 
 
 
@@ -64,7 +63,7 @@ date_and_time="%[exif:DateTimeOriginal]"
 # print help
 _print_help()
 {
-  echo "$0 usage:" && grep " .)\ #" $0;
+  echo "$0 usage:" && grep " .)\\ #" "$0";
   exit 0;
 }
 
@@ -79,19 +78,19 @@ _stop_it ()
 _display_options_selected ()
 {
   printf "options selected are:\\n"
-#  printf "  tiltshift: $tiltshift\\n"
-  printf "  annotate: $annotation\\n"
-  printf "  date_and_time: ${date_and_time}\\n"
-  printf "  signature: $signature\\n"
-#  printf "  watermark: $watermark\\n"
-  shift $(($OPTIND - 1))
-  printf "  Remaining arguments are: %s\n" "$*"
+#  printf "  tiltshift: %s\\n" "${tiltshift}"
+  printf "  annotate: %s\\n" "${annotation}"
+  printf "  date_and_time: %s\\n" "${date_and_time}"
+  printf "  signature: %s\\n" "${signature}"
+#  printf "  watermark: %s\\n" "${watermark}"
+  shift $((OPTIND-1))
+  printf "  Remaining arguments are: %s\\n" "$*"
 }
 
 # Adding the date and time, the annotation and the signature to the temporary picture
 _add_annotation_signature_date_and_time_on_picture ()
 {
-  convert $1 \
+  convert "$1" \
   \( -font $font \
   -pointsize $pointsize \
   -fill white \
@@ -111,18 +110,18 @@ _add_annotation_signature_date_and_time_on_picture ()
   -stroke snow2 \
   -gravity NorthEast \
   -annotate 270x270+16+16 "$signature" \)\
-  $temporary_file_with_annotation_signature_date_and_time_on_picture
+  "$temporary_file_with_annotation_signature_date_and_time_on_picture"
 }
 
 # Confirm if the original folder exists
 _confirm_if_original_folder_exists ()
 {
-  if [ ! -d $original_folder_name ]; then
-    printf "I couldn't find the folder $original_folder_name\\n"
+  if [ ! -d "${original_folder_name}" ]; then
+    printf "I couldn't find the folder %s\\n" "$original_folder_name"
     _print_help
     exit $E_BADDIR
   else
-    printf "\\nWe have found $original_folder_name\\n"
+    printf "\\nWe have found %s\\n" "$original_folder_name"
     printf "We will now start creating temporary folders needed for the time-lapse video.\\n\\n"
   fi;
 }
@@ -135,9 +134,9 @@ _confirm_if_original_folder_exists ()
 # ----------------------------------- #
 
 # test if `mencoder` is available
-MENCODER=`which mencoder 2> /dev/null`
-if [ -z $MENCODER ]; then
-  echo '`mencoder` is not available, please install it'
+MENCODER=$(command -v mencoder 2> /dev/null)
+if [ -z "$MENCODER" ]; then
+  printf "mencoder is not available, please install it\\n"
   exit 1
 fi
 
@@ -162,81 +161,64 @@ while getopts "t :h:d:a:s:w:" options; do
   esac
 done
 
-# TODO repeat for every folder, the script right now will take the last entry as folder to work with.
-shift $(($OPTIND - 1))
+# TODO repeat for every folder, the script right now will come back with an error if multiple folders are introduced
+shift $((OPTIND-1))
 original_folder_name="$*"
 
 
-_display_options_selected
+_display_options_selected ""
 
-_confirm_if_original_folder_exists
+
+_confirm_if_original_folder_exists ""
+
+trap _stop_it SIGINT SIGTERM
 
 
 # Create temporay folder
 temp_folder="temp_${original_folder_name}"
-if [ ! -d $temp_folder ]; then
-  mkdir -p $temp_folder;
-fi;
-
-trap _stop_it SIGINT SIGTERM
-
-#### Step 01 add date and description to pictures ####
-printf "#### Adding the time and date to each picture ####\\n"
-config_file_where_annotation_is_stored="$temp_folder/annotation_displayed_in_video.txt"
-if [ -f $config_file_where_annotation_is_stored ]; then
-  annotation=`cat $config_file_where_annotation_is_stored`
-  printf "We have found the following description previously used for this time-lapse:\\n"
-  printf "${annotation}\\n\\n"
-  read -p "Press enter to continue"
-else
-  echo "${annotation}" > $config_file_where_annotation_is_stored
+if [ ! -d "$temp_folder" ]; then
+  mkdir -p "$temp_folder";
 fi;
 
 # step 01.1 confirm if the folder where the temporary images are going to be created exist, if it doesn't create it
-added_time_temp_folder="${temp_folder}/added_time"
-if [ ! -d $added_time_temp_folder ]; then
-  printf "\\n\\nCreating the temporary folder where we will be storing the pictures with the date and time.\\n\\n"
-  mkdir -p $added_time_temp_folder;
-else
-  printf "\\n\\nIt seems we have found a previously created $added_time_temp_folder\\n"
-  printf "The app won't overwrite already created files, it will automatically continue where it left.\\n"
-  printf "If you want to force the creation of the files, please delete the temp folder and run the script again.\\n\\n"
-  read -p "Press enter to continue"
+added_time_temp_folder="${temp_folder}added_time"
+if [ ! -d "$added_time_temp_folder" ]; then
+  mkdir -p "$added_time_temp_folder";
 fi;
 
 ## step 01.2 count total amount of files to know create the %
-total_amount_of_pictures_to_process=$(find $original_folder_name -name '*.jpg' -or -name '*.JPG' | wc -l)
+total_amount_of_pictures_to_process=$(find "$original_folder_name" -name '*.jpg' -or -name '*.JPG' | wc -l)
 amount_of_files_processed=0
 
 ## step 01.3 Add date and time to each picture
 
-for file in $(find $original_folder_name -name '*.jpg' -or -name '*.JPG')
-do printf "For the following: $file adding date and time\\n"
-  dir=${file%/*}
+#for file in $(find "$original_folder_name" -name '*.jpg' -or -name '*.JPG')
+while IFS= read -r -d '' file
+do printf "For the following: %s adding date and time\\n" "$file"
+  #dir=${file%/*}
   full_file_name=${file##*/}
   filename=${full_file_name%.*}
-  extension=${file##*.}
+  #extension=${file##*.}
   output=${filename}_DT.jpg
-  temporary_file_with_annotation_signature_date_and_time_on_picture=$added_time_temp_folder"/"$output
+  temporary_file_with_annotation_signature_date_and_time_on_picture=${added_time_temp_folder}"/"${output}
   #printf "$dir\\n"
   #printf "$full_file_name\\n"
   #printf "$filename\\n"
   #printf "$extension\\n"
   #printf "$output\\n"
   #printf "$temporary_file_with_annotation_signature_date_and_time_on_picture\\n"
-  let amount_of_files_processed=amount_of_files_processed+1
-  percentage_processed=$(echo "scale=2; $amount_of_files_processed*100/$total_amount_of_pictures_to_process" | bc)
-  printf "$amount_of_files_processed of $total_amount_of_pictures_to_process files processed = ${percentage_processed}%%\\n"
+  (( amount_of_files_processed++ ))
+  percentage_processed=$(echo "scale=2; ${amount_of_files_processed}*100/${total_amount_of_pictures_to_process}" | bc)
+  printf "${amount_of_files_processed} of ${total_amount_of_pictures_to_process} files processed = ${percentage_processed}%%\\n"
   
-  if [ ! -f $temporary_file_with_annotation_signature_date_and_time_on_picture ]; then
-    
-    _add_annotation_signature_date_and_time_on_picture "$file"
+  if [ ! -f "${temporary_file_with_annotation_signature_date_and_time_on_picture}" ]; then
+    _add_annotation_signature_date_and_time_on_picture "${file}"
     ## TO DO while terminated by Control-C
-    printf "CREATED $temporary_file_with_annotation_signature_date_and_time_on_picture\\n\\n"
+    printf "CREATED %s\\n\\n" "${temporary_file_with_annotation_signature_date_and_time_on_picture}"
   else
     printf "Skipping file, already exist\\n\\n"
   fi
-done
+done <   <(find "${original_folder_name}" \( -name '*.jpg' -or -name '*.JPG' \) -print0)
 
 
 
@@ -244,35 +226,49 @@ done
 
 
 ## Step 99 create video
-#printf "${temp_folder}\\n"
-#printf "${added_time_temp_folder}\\n"
-ls -1v $PWD/${added_time_temp_folder}/* | grep jpg > $temp_folder/list_of_files_with_added_time.txt
+# check if the file containing the list of picture is already there, if so delete it
+if [ -f "${temp_folder}"/list_of_files_with_added_time.txt ]; then
+  rm "${temp_folder}"/list_of_files_with_added_time.txt
+fi;
+# create a file with the list of pictures that mencoder will use
+for f in "$PWD"/"${added_time_temp_folder}"/*
+do
+  case "$f" in
+    *jpg) echo "$f" >> "${temp_folder}"list_of_files_with_added_time.txt;;
+    *) true;;
+  esac
+done
 
-
+# cleaning variables for mencoder and descriptions
 cleaned_scale=${scale//[-+=.,:]/x}
 cleaned_original_folder_name=${original_folder_name//[+= .,?\\\/:]/_}
 cleaned_annotation=${annotation//[+= .,?\\\/:]/_}
 video_file_name="${cleaned_original_folder_name}_-_${cleaned_annotation}_-_fps_${fps}_-_scale_${cleaned_scale}.avi"
 
-mencoder -nosound -ovc lavc -lavcopts vcodec=mpeg4:vbitrate=21600000 -o $video_file_name -mf type=jpeg:fps=$fps mf://@$PWD/${temp_folder}/list_of_files_with_added_time.txt -vf scale=$scale
+#mencoder -nosound -ovc lavc -lavcopts vcodec=mpeg4:vbitrate=21600000 -o "${video_file_name}" -mf type=jpeg:fps="${fps}" mf://@"$PWD"/"${temp_folder}"/list_of_files_with_added_time.txt -vf scale="${scale}"
+generate_video="mencoder -nosound -ovc lavc -lavcopts vcodec=mpeg4:vbitrate=21600000 -o ${video_file_name} -mf type=jpeg:fps=${fps} mf://@${PWD}/${temp_folder}list_of_files_with_added_time.txt -vf scale=${scale}"
+eval "$generate_video"
 
 printf "\\n\\n CONGRATS\\n"
-printf "$video_file_name\\n"
+printf "%s\\n" "${video_file_name}"
 printf "created in local directory\\n\\n"
 
 ## creates a file with the most useful commands
-printf "## If you delete some pictures from the folder and you want to re-create the list, run the first ls command ##\\n" > $PWD/$temp_folder/cheat_sheet_with_commands_used.txt
-printf "ls -1v $PWD/${added_time_temp_folder}/* | grep jpg > $temp_folder/list_of_files_with_added_time.txt" >> $PWD/$temp_folder/cheat_sheet_with_commands_used.txt
-printf "\\n\\n## If you want to modify the mencoder command, here you can find the original one used ##\\n" >> $PWD/$temp_folder/cheat_sheet_with_commands_used.txt
-printf "mencoder -nosound -ovc lavc -lavcopts vcodec=mpeg4:vbitrate=21600000 -o $video_file_name -mf type=jpeg:fps=$fps mf://@$PWD/${temp_folder}/list_of_files_with_added_time.txt -vf scale=$scale" >> $temp_folder/cheat_sheet_with_commands_used.txt
+cheat_sheet_file_with_commands_used="${PWD}/${temp_folder}/cheat_sheet_with_commands_used.txt"
+{
+  printf "## If you have deleted some pictures from the processed picture's folder and you want to re-create the list of jpg, run the folllowing command ##\\n" 
+  printf "ls -1v %s/%s/* | grep jpg > %slist_of_files_with_added_time.txt" "$PWD" "${added_time_temp_folder}" "$temp_folder"
+  printf "\\n\\n## If you want to modify the mencoder command, here you can find the one used by the script ##\\n" 
+  printf "%s" "${generate_video}"
+} > "${cheat_sheet_file_with_commands_used}"
 
 ## TO DO add summary of video:
-# total duration of video
-# from first exif to last
-# total duration of time-lapse captured
+# total duration of captured video from first exif to last
+# total duration of generated time-lapse video
 
-# TO DO
-# add information in video
+## TO DO video editing
+# export options 
+# add metadata information in video
 
 
 exit 0
