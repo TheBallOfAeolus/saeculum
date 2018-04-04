@@ -54,7 +54,7 @@ Remember to re-reload .profile
 ```
 ## Example
 
-In this [Google drive link](https://drive.google.com/open?id=1S16jQU71iI_k5vExpOLy5nA2aiLeXN8_), you can find a folder with the original pictures I have used for the following examples.
+In this [Google drive link](https://drive.google.com/open?id=1cvwKGKIOoQJYrZujpnomUSjLde-LVSCQ), you can find a folder with the original pictures I have used for the following examples.
 _As you can see, I have replicated the same folder stracture you can find in GoPro or other cameras._
 
 ### Using the script without options
