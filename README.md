@@ -6,12 +6,12 @@ I love the GoPro time-lapse functionality, but I wasn't able to find any command
 
 ## Features 
 ### added
-* recursively go through subfolders
-* add automatically on the bottom right the date and time of each picture taken (original exif)
-* if restarted, it will automatically continue from where it left
-* add an annotation/description on the video (bottom left)
-* add a signature/trademark on the video (top right in vertical)
-* creates a text with the command used for the video
+* **recursively** go through **subfolders**
+* **add** automatically on the bottom right the **date and time** of each picture taken (original **exif**)
+* if restarted, it will automatically **continue from** where it **left**
+* **add** an **annotation/description** on the video (bottom left)
+* **add** a **signature/trademark** on the video (top right in vertical)
+* creates a **cheatsheet**/text with the command used for the video
 ### to do
 * tilt-shift video
 * refactor to provide more video editing options
