@@ -1,265 +1,121 @@
-#!/bin/bash
+# saeculum
 
-#*********************************************************************************************#
-#                        https://github.com/TheBallOfAeolus/saeculum                          #
-#                                  written by TheBallOfAeolus                                 #
-#                                         March 2018                                          #
-#                                                                                             #
-#  Creates a time-lapse video, from a folder containing multiple pictures and or sub-folders  #
-#     Providing the ability to add a description and/or the exif date and/or a signature.     #
-#*********************************************************************************************#
+A bash scripts that creates a time-lapse video providing options to add the exif time, description or a signature.
+ 
+I love the GoPro time-lapse functionality, but I wasn't able to find any command line solution that would navigate through all the folders created under DCIM and create a time-lapse video for me.
 
+## Features 
+### added
+* **recursively** go through **subfolders**
+* **add** automatically on the bottom right the **date and time** of each picture taken (original **exif**)
+* if restarted, it will automatically **continue from** where it **left**
+* **add** an **annotation/description** on the video (bottom left)
+* **add** a **signature/trademark** on the video (top right in vertical)
+* creates a **cheatsheet**/text with the command used for the video
+### to do
+* tilt-shift video
+* refactor to provide more video editing options
+* if succesful automatically delete temporary pictures and folders
+* add a watermark
 
-#
-# MIT License
-#
-# Copyright (c) 2018 TheBallOfAeolus
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in the
-# Software without restriction, including without limitation the rights to use, copy,
-# modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
-# and to permit persons to whom the Software is furnished to do so, subject to the
-# following conditions:
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-# INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-# PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
-# CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
-# OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-#
+## Getting Started
 
+The script is expecting a folder with all the pictures taken (it will automatically recursively navigate within it and find any JPG or jpg present).
 
+As it is right now, it will create a local temp folder and will add to each picture a specific description and the date and time taken (from the exif information).
 
-### DEFAULT VALUES ###
+If for whatever reason the script is stopped during the process, when re-run it will automatically continue from where it was left.
 
-# for video formatting
-fps=60
-scale=3840:2160
+If it is needed to re-create everything, please delete the temporary folder and run the script again.
 
-# for date and notes displayed in pictures
-font="/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf"  # using mono so date and time do not "dance" in video
-pointsize=43      # with GoPRO: Width: 2592, Height: 1944. Using pointsize: 43
+### Prerequisites
 
-# for signature displayed in pictures
-signature_pointsize=16
-signature_font="/usr/share/fonts/truetype/msttcorefonts/comic.ttf"  # why comic? https://goo.gl/Lcisr8
+mencoder
 
-# by default the date and time is the picture original exif information
-date_and_time="%[exif:DateTimeOriginal]"
+```
+:~$ sudo apt-get install mencoder
+```
 
+### Installing
 
+Just download the script and run it.
 
-### ERROR CODES ###
-E_BADDIR=85                     # No such directory.
+example
+```
+:~$ git clone https://github.com/TheBallOfAeolus/saeculum.git
+:~$ cd saeculum/
+:~$ ./create_time-lapse_video.sh <~/TheFolder/WhereYouPicturesAreLocated>
+```
 
+If you really want to install it, in Ubuntu you can move the script (or link -s) to ~/bin.
+Remember to re-reload .profile
+```
+:~$ . ~/.profile
+```
+## Example
 
+In this [Google drive link](https://drive.google.com/open?id=1cvwKGKIOoQJYrZujpnomUSjLde-LVSCQ), you can find a folder with the original pictures I have used for the following examples.
+_As you can see, I have replicated the same folder stracture you can find in GoPro or other cameras._
 
-### FUNCTIONS ###
+### Using the script without options
 
-# print help
-_print_help()
-{
-  echo "$0 usage:" && grep " .)\\ #" "$0";
-  exit 0;
-}
+```
+:~$ create_time-lapse_video.sh 20160615_test/
+```
 
-# stop the script if Control-C is selected
-_stop_it ()
-{
-  kill -s SIGTERM $!
-  exit 0
-}
+example: https://youtu.be/ylO_mTFh2W8
 
-# used only for testing
-_display_options_selected ()
-{
-  printf "options selected are:\\n"
-  #  printf "  tiltshift: %s\\n" "${tiltshift}"
-  printf "  annotate: %s\\n" "${annotation}"
-  printf "  date_and_time: %s\\n" "${date_and_time}"
-  printf "  signature: %s\\n" "${signature}"
-  #  printf "  watermark: %s\\n" "${watermark}"
-  shift $((OPTIND-1))
-  printf "  Remaining arguments are: %s\\n" "$*"
-}
+The script by default will read the exif information and add the date at the bottom right of the picture
 
-# Adding the date and time, the annotation and the signature to the temporary picture
-_add_annotation_signature_date_and_time_on_picture ()
-{
-  convert "$1" \
-  \( -font $font \
-  -pointsize $pointsize \
-  -fill white \
-  -strokewidth 2 \
-  -stroke Black \
-  -gravity SouthEast \
-  -annotate +$pointsize+$pointsize "$date_and_time" \)\
-  \( -font $font \
-  -pointsize $pointsize \
-  -fill white \
-  -strokewidth 2 \
-  -stroke Black \
-  -gravity SouthWest \
-  -annotate +$pointsize+$pointsize "$annotation" \)\
-  \( -font $signature_font \
-  -pointsize $signature_pointsize \
-  -stroke snow2 \
-  -gravity NorthEast \
-  -annotate 270x270+16+16 "$signature" \)\
-  "$temporary_file_with_annotation_signature_date_and_time_on_picture"
-}
+### Generate the video without a date
 
-# Confirm if the original folder exists
-_confirm_if_original_folder_exists ()
-{
-  if [ ! -d "${original_folder_name}" ]; then
-    printf "I couldn't find the folder %s\\n" "$original_folder_name"
-    _print_help
-    exit $E_BADDIR
-  else
-    printf "\\nWe have found %s\\n" "$original_folder_name"
-    printf "We will now start creating temporary folders needed for the time-lapse video.\\n\\n"
-  fi;
-}
+```
+:~$ create_time-lapse_video.sh -d "" 20160615_test/
+```
+
+example: https://youtu.be/RC7Ni6qIObI
+
+As commented by default the exif date is automatically added. 
+
+If we do not want to display any information at all we need to pass ```-d ""```
+
+### Use a specific description instead of the deafult exif date
+
+```
+:~$ create_time-lapse_video.sh -d "2099 Jan 33" 20160615_test/
+```
+
+example: https://youtu.be/i27lYU95qB8
+
+Instead of using the exif information of every picture, we can force a specific information to be displayed instead.
+
+### Add an annotation
+
+```
+:~$ create_time-lapse_video.sh -a "testing test" 20160615_test/
+```
+
+Example: https://youtu.be/cPavlMViS3Q
+
+If we need to add a specific description, we can do it by using the option -a 
 
 
+### Add an annotation and a signature
+
+```
+:~$ create_time-lapse_video.sh -a "testing test" -s "my@signature.com or https://test.testing" 20160615_test/
+```
+
+Example: https://youtu.be/0U8THadjH7E
+
+Using the option ```-s ""``` a smaller vertical description on the top right is displayed, this can be used to trademark or url ot a simple signature.
+
+## Authors
+
+* **The Ball Of Aeolus** - *Initial work* - [TheBallOfAeolus](https://github.com/TheBallOfAeolus)
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
 
 
-# ----------------------------------- #
-#   here is where the magic happens   #
-# ----------------------------------- #
-
-# test if `mencoder` is available
-MENCODER=$(command -v mencoder 2> /dev/null)
-if [ -z "$MENCODER" ]; then
-  printf "mencoder is not available, please install it\\n"
-  exit 1
-fi
-
-
-## get the options
-[ $# -eq 0 ] && _print_help
-while getopts "t :h:d:a:s:w:" options; do
-  case $options in
-    a) # Annotate: add a caption/description on the left of the time-lapse video.
-      annotation=${OPTARG}
-    ;;
-    d) # Date&Time: use this option to specify a specific static date (by default the script will read the exif information and add it to the video)
-      date_and_time=${OPTARG}
-    ;;
-    s) # Signature: add the signature/credit description small and in vertical top right position.
-      signature=${OPTARG}
-    ;;
-    h | *) # Help: Display help.
-      _print_help
-      exit 0
-    ;;
-  esac
-done
-
-## TO DO options
-#    t) # Tiltshift: add tilt shift effect to the time-lapse video.
-#      tiltshift=1
-#    ;;
-#    w) # Watermark: use the provided picture as watermark.
-#      watermark=${OPTARG}
-#    ;;
-# improvement: ability to process multiple folders/projects passed as options
-# (at the moment the script admits only one folder and it will recursively go through all the subfolders, but it consider everything as a single project)
-
-shift $((OPTIND-1))
-original_folder_name="$*"
-
-
-trap _stop_it SIGINT SIGTERM
-
-_display_options_selected ""
-
-_confirm_if_original_folder_exists ""
-
-# Create temporary folder
-temp_folder="temp_${original_folder_name}"
-if [ ! -d "$temp_folder" ]; then
-  mkdir -p "$temp_folder";
-fi;
-
-# Create temporary folder for processed pictures
-processed_pictures_temp_folder="${temp_folder}processed_pictures"
-if [ ! -d "$processed_pictures_temp_folder" ]; then
-  mkdir -p "$processed_pictures_temp_folder";
-fi;
-
-## Count total amount of files, this is needed for displaying the percentage
-total_amount_of_pictures_to_process=$(find "$original_folder_name" -name '*.jpg' -or -name '*.JPG' | wc -l)
-amount_of_files_processed=0
-
-## this is where we actually process the images by adding annotation, signature and date & time
-while IFS= read -r -d '' file
-do printf "Processing %s by adding annotation, signature and date & time\\n" "$file"
-  full_file_name=${file##*/}
-  filename=${full_file_name%.*}
-  output=${filename}_DT.jpg
-  temporary_file_with_annotation_signature_date_and_time_on_picture=${processed_pictures_temp_folder}"/"${output}
-  (( amount_of_files_processed++ ))
-  percentage_processed=$(echo "scale=2; ${amount_of_files_processed}*100/${total_amount_of_pictures_to_process}" | bc)
-  printf "${amount_of_files_processed} of ${total_amount_of_pictures_to_process} files processed = ${percentage_processed}%%\\n"
-  
-  if [ ! -f "${temporary_file_with_annotation_signature_date_and_time_on_picture}" ]; then
-    _add_annotation_signature_date_and_time_on_picture "${file}"
-    printf "CREATED %s\\n\\n" "${temporary_file_with_annotation_signature_date_and_time_on_picture}"
-  else
-    printf "Skipping file, already exist\\n\\n"
-  fi
-done <   <(find "${original_folder_name}" \( -name '*.jpg' -or -name '*.JPG' \) -print0)
-
-
-## Create video
-# check if the file containing the list of picture is already there, if so delete it
-if [ -f "${temp_folder}"/list_of_files_with_added_time.txt ]; then
-  rm "${temp_folder}"/list_of_files_with_added_time.txt
-fi;
-# create a file with the list of pictures that mencoder will use
-for f in "$PWD"/"${processed_pictures_temp_folder}"/*
-do
-  case "$f" in
-    *jpg) echo "$f" >> "${temp_folder}"list_of_files_with_added_time.txt;;
-    *) true;;
-  esac
-done
-
-# cleaning variables for mencoder and descriptions
-cleaned_scale=${scale//[-+=.,:]/x}
-cleaned_original_folder_name=${original_folder_name//[+= .,?\\\/:]/_}
-cleaned_annotation=${annotation//[+= .,?\\\/:]/_}
-video_file_name="${cleaned_original_folder_name}_-_${cleaned_annotation}_-_fps_${fps}_-_scale_${cleaned_scale}.avi"
-
-generate_video="mencoder -nosound -ovc lavc -lavcopts vcodec=mpeg4:vbitrate=21600000 -o ${video_file_name} -mf type=jpeg:fps=${fps} mf://@${PWD}/${temp_folder}list_of_files_with_added_time.txt -vf scale=${scale}"
-eval "$generate_video"
-
-printf "\\n\\n CONGRATS\\n"
-printf "%s\\n" "${video_file_name}"
-printf "created in local directory\\n\\n"
-
-## creates a file with the most useful commands
-cheat_sheet_file_with_commands_used="${PWD}/${temp_folder}/cheat_sheet_with_commands_used.txt"
-{
-  printf "## If you have deleted some pictures from the processed picture's folder and you want to re-create the list of jpg, run the following command ##\\n"
-  printf "ls -1v %s/%s/* | grep jpg > %slist_of_files_with_added_time.txt" "$PWD" "${processed_pictures_temp_folder}" "$temp_folder"
-  printf "\\n\\n## If you want to modify the mencoder command, here you can find the one used by the script ##\\n"
-  printf "%s" "${generate_video}"
-} > "${cheat_sheet_file_with_commands_used}"
-
-## TO DO add summary of video:
-# total duration of captured video from first exif to last
-# total duration of generated time-lapse video
-
-## TO DO video editing
-# export options
-# add metadata information in video
-
-
-exit 0
